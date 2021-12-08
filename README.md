@@ -1,4 +1,8 @@
 # nav_cloning
+３年後期、実験用nav_cloning pkg
+実験用環境戻す場合
+scripts/nav_cloning_node.pyとnav_cloning_net.py
+をopen-rdcのに変更する必要がある
 ## Running simulation
 * シミュレータの起動
 ```
