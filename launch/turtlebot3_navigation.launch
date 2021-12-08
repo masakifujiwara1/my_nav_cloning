@@ -29,7 +29,7 @@
     <arg name="cmd_vel_topic" value="/nav_vel"/>
   </include>
 
-  <node name="waypoints_nav" pkg="fulanghua_waypoints_nav" type="waypoints_nav" output="screen">
+  <node name="waypoints_nav" pkg="waypoint_nav" type="waypoint_navigator" output="screen">
     <param name="filename" value="$(arg waypoints_file)"/>
     <param name="dist_err" value="$(arg dist_err)"/>
   </node>

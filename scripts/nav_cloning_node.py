@@ -1,69 +1,76 @@
 #!/usr/bin/env python
 from __future__ import print_function
+import copy
+import time
+import os
+import csv
+from std_srvs.srv import SetBool, SetBoolResponse
+from std_srvs.srv import Empty
+from geometry_msgs.msg import PoseWithCovarianceStamped
+from std_msgs.msg import Int8MultiArray
+from nav_msgs.msg import Path
+from std_srvs.srv import Trigger
+from std_msgs.msg import Int8
+from geometry_msgs.msg import PoseArray
+from geometry_msgs.msg import Twist
+from skimage.transform import resize
+from nav_cloning_net import *
+from cv_bridge import CvBridge, CvBridgeError
+from sensor_msgs.msg import Image
+import cv2
+import rospy
 import roslib
 roslib.load_manifest('nav_cloning')
-import rospy
-import cv2
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge, CvBridgeError
-from nav_cloning_net import *
-from skimage.transform import resize
-from geometry_msgs.msg import Twist
-from geometry_msgs.msg import PoseArray
-from std_msgs.msg import Int8
-from std_srvs.srv import Trigger
-from nav_msgs.msg import Path
-from geometry_msgs.msg import PoseWithCovarianceStamped
-from std_srvs.srv import Empty
-#from gazebo_msgs.srv import SetModelState
-#from gazebo_msgs.srv import GetModelState
-#from gazebo_msgs.msg import ModelState
-from std_srvs.srv import SetBool, SetBoolResponse
-import csv
-import os
-import time
-import copy
-import sys
+
 
 class cource_following_learning_node:
     def __init__(self):
         rospy.init_node('cource_following_learning_node', anonymous=True)
-        self.action_num = rospy.get_param("/LiDAR_based_learning_node/action_num", 1)
+        self.action_num = rospy.get_param(
+            "/LiDAR_based_learning_node/action_num", 1)
         print("action_num: " + str(self.action_num))
-        self.dl = deep_learning(n_action = self.action_num)
+        self.dl = deep_learning(n_action=self.action_num)
         self.bridge = CvBridge()
-        self.image_sub = rospy.Subscriber("/camera/rgb/image_raw", Image, self.callback)
-        self.image_left_sub = rospy.Subscriber("/camera_left/rgb/image_raw", Image, self.callback_left_camera)
-        self.image_right_sub = rospy.Subscriber("/camera_right/rgb/image_raw", Image, self.callback_right_camera)
+        self.image_sub = rospy.Subscriber(
+            "/camera/rgb/image_raw", Image, self.callback)
+        self.image_left_sub = rospy.Subscriber(
+            "/camera_left/rgb/image_raw", Image, self.callback_left_camera)
+        self.image_right_sub = rospy.Subscriber(
+            "/camera_right/rgb/image_raw", Image, self.callback_right_camera)
         self.vel_sub = rospy.Subscriber("/nav_vel", Twist, self.callback_vel)
         self.action_pub = rospy.Publisher("action", Int8, queue_size=1)
         self.nav_pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
-        self.srv = rospy.Service('/training', SetBool, self.callback_dl_training)
-        self.pose_sub = rospy.Subscriber("/amcl_pose", PoseWithCovarianceStamped, self.callback_pose)
-        self.path_sub = rospy.Subscriber("/move_base/NavfnROS/plan", Path, self.callback_path)
+        self.srv = rospy.Service('/training', SetBool,
+                                 self.callback_dl_training)
+        self.pose_sub = rospy.Subscriber(
+            "/amcl_pose", PoseWithCovarianceStamped, self.callback_pose)
+        self.path_sub = rospy.Subscriber(
+            "/move_base/NavfnROS/plan", Path, self.callback_path)
+        self.dir_cmd_sub = rospy.Subscriber(
+            "/cmd_data", Int8MultiArray, self.callback_cmd)
         self.min_distance = 0.0
         self.action = 0.0
         self.episode = 0
         self.vel = Twist()
         self.path_pose = PoseArray()
-        self.cv_image = np.zeros((480,640,3), np.uint8)
-        self.cv_left_image = np.zeros((480,640,3), np.uint8)
-        self.cv_right_image = np.zeros((480,640,3), np.uint8)
+        self.cv_image = np.zeros((480, 640, 3), np.uint8)
+        self.cv_left_image = np.zeros((480, 640, 3), np.uint8)
+        self.cv_right_image = np.zeros((480, 640, 3), np.uint8)
         self.learning = True
         self.select_dl = False
         self.start_time = time.strftime("%Y%m%d_%H:%M:%S")
-        self.path = roslib.packages.get_pkg_dir('nav_cloning') + '/data/result_proposed_new/'
-        self.save_path = roslib.packages.get_pkg_dir('nav_cloning') + '/data/model_proposed_new/'
+        self.path = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/result/'
+        self.save_path = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/model/'
         self.previous_reset_time = 0
-        self.pos_x = 0
-        self.pos_y = 0
-        self.is_started = False
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)
 
-        with open(self.path + self.start_time + '/' +  'reward.csv', 'w') as f:
+        with open(self.path + self.start_time + '/' + 'reward.csv', 'w') as f:
             writer = csv.writer(f, lineterminator='\n')
-            writer.writerow(['step', 'mode', 'loss', 'angle_error(rad)', 'distance(m)','x(m)','y(m)'])
+            writer.writerow(
+                ['step', 'mode', 'loss', 'angle_error(rad)', 'distance(m)'])
 
     def callback(self, data):
         try:
@@ -89,8 +96,7 @@ class cource_following_learning_node:
     def callback_pose(self, data):
         distance_list = []
         pos = data.pose.pose.position
-        self.pos_x = pos.x
-        self.pos_y = pos.y
+
         for pose in self.path_pose.poses:
             path = pose.pose.position
             distance = np.sqrt(abs((pos.x - path.x)**2 + (pos.y - path.y)**2))
@@ -98,6 +104,9 @@ class cource_following_learning_node:
 
         if distance_list:
             self.min_distance = min(distance_list)
+
+    def callback_cmd(self, data):
+        self.dir_cmd_data = data.data
 
     def callback_vel(self, data):
         self.vel = data
@@ -117,41 +126,28 @@ class cource_following_learning_node:
             return
         if self.cv_right_image.size != 640 * 480 * 3:
             return
-        """
-        rospy.wait_for_service('/gazebo/get_model_state')
-        get_model_state = rospy.ServiceProxy('/gazebo/get_model_state', GetModelState)
-        try:
-            previous_model_state = get_model_state('mobile_base', 'world')
-        except rospy.ServiceException as exc:
-            print("Service did not process request: " + str(exc))
-        """
-        
-        if self.vel.linear.x != 0:
-            self.is_started = True
-        if self.is_started == False:
+
+        if self.vel.linear.x == 0:
             return
+
         img = resize(self.cv_image, (48, 64), mode='constant')
         r, g, b = cv2.split(img)
-        imgobj = np.asanyarray([r,g,b])
+        imgobj = np.asanyarray([r, g, b])
 
         img_left = resize(self.cv_left_image, (48, 64), mode='constant')
         r, g, b = cv2.split(img_left)
-        imgobj_left = np.asanyarray([r,g,b])
+        imgobj_left = np.asanyarray([r, g, b])
 
         img_right = resize(self.cv_right_image, (48, 64), mode='constant')
         r, g, b = cv2.split(img_right)
-        imgobj_right = np.asanyarray([r,g,b])
-
+        imgobj_right = np.asanyarray([r, g, b])
+        dir_cmd = np.asanyarray(self.dir_cmd_data)
         ros_time = str(rospy.Time.now())
 
-        if self.episode == 8000:
+        if self.episode == 4000:
             self.learning = False
             self.dl.save(self.save_path)
-            #self.dl.load(self.load_path)
-
-        if self.episode == 12000:
-            os.system('killall roslaunch')
-            sys.exit()
+            # self.dl.load(self.load_path)
 
         if self.learning:
             target_action = self.action
@@ -185,7 +181,7 @@ class cource_following_learning_node:
             if self.select_dl and self.episode >= 0:
                 target_action = 0
             """
-
+            """
             # proposed method (old)
             action, loss = self.dl.act_and_trains(imgobj, target_action)
             if abs(target_action) < 0.1:
@@ -198,20 +194,25 @@ class cource_following_learning_node:
                 self.select_dl = True
             if self.select_dl and self.episode >= 0:
                 target_action = action
-            
             """
+
             # follow line method
-            action, loss = self.dl.act_and_trains(imgobj, target_action)
+            action, loss = self.dl.act_and_trains(
+                imgobj, dir_cmd, target_action)
             if abs(target_action) < 0.1:
-                action_left,  loss_left  = self.dl.act_and_trains(imgobj_left, target_action - 0.2)
-                action_right, loss_right = self.dl.act_and_trains(imgobj_right, target_action + 0.2)
+                action_left,  loss_left = self.dl.act_and_trains(
+                    imgobj_left,  dir_cmd, target_action - 0.2)
+                action_right, loss_right = self.dl.act_and_trains(
+                    imgobj_right, dir_cmd, target_action + 0.2)
             angle_error = abs(action - target_action)
-            """
+
             # end method
 
-            print(" episode: " + str(self.episode) + ", loss: " + str(loss) + ", angle_error: " + str(angle_error) + ", distance: " + str(distance))
+            print(" episode: " + str(self.episode) + ",dir:" + str(dir_cmd) + ", loss: " +
+                  str(loss) + ", angle_error: " + str(angle_error) + ", distance: " + str(distance))
             self.episode += 1
-            line = [str(self.episode), "training", str(loss), str(angle_error), str(distance), str(self.pos_x), str(self.pos_y)]
+            line = [str(self.episode), "training", str(
+                loss), str(angle_error), str(distance)]
             with open(self.path + self.start_time + '/' + 'reward.csv', 'a') as f:
                 writer = csv.writer(f, lineterminator='\n')
                 writer.writerow(line)
@@ -220,13 +221,15 @@ class cource_following_learning_node:
             self.nav_pub.publish(self.vel)
 
         else:
-            target_action = self.dl.act(imgobj)
+            target_action = self.dl.act(imgobj, dir_cmd)
             distance = self.min_distance
-            print("TEST MODE: " + " angular:" + str(target_action) + ", distance: " + str(distance))
+            print("TEST MODE: " + " angular:" +
+                  str(target_action) + ", distance: " + str(distance))
 
             self.episode += 1
             angle_error = abs(self.action - target_action)
-            line = [str(self.episode), "test", "0", str(angle_error), str(distance), str(self.pos_x), str(self.pos_y)]
+            line = [str(self.episode), "test", "0",
+                    str(angle_error), str(distance)]
             with open(self.path + self.start_time + '/' + 'reward.csv', 'a') as f:
                 writer = csv.writer(f, lineterminator='\n')
                 writer.writerow(line)
@@ -241,6 +244,7 @@ class cource_following_learning_node:
         temp = copy.deepcopy(img_right)
         cv2.imshow("Resized Right Image", temp)
         cv2.waitKey(1)
+
 
 if __name__ == '__main__':
     rg = cource_following_learning_node()

@@ -23,9 +23,10 @@
         args="8 nav_cloning turtlebot3_navigation.launch model:=waffle map_file:=$(find nav_cloning)/maps/willowgarage.yaml waypoints_file:=$(find nav_cloning)/maps/willow_loop.yaml"
         name="timed_roslaunch2" >
   </node>
-
+<!--
   <node pkg="timed_roslaunch" type="timed_roslaunch.sh"
         args="20 nav_cloning start_wp_nav.launch"
         name="timed_roslaunch3" >
   </node>
+-->
 </launch>
