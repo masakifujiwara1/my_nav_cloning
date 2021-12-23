@@ -144,7 +144,7 @@ class cource_following_learning_node:
         dir_cmd = np.asanyarray(self.dir_cmd_data)
         ros_time = str(rospy.Time.now())
 
-        if self.episode == 4000:
+        if self.episode == 60000:
             self.learning = False
             self.dl.save(self.save_path)
             # self.dl.load(self.load_path)
