@@ -143,6 +143,8 @@ class cource_following_learning_node:
         imgobj_right = np.asanyarray([r, g, b])
         dir_cmd = np.asanyarray(self.dir_cmd_data)
         ros_time = str(rospy.Time.now())
+        count = 0
+        print(count)
 
         if self.episode == 60000:
             self.learning = False

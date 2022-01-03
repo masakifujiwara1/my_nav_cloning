@@ -47,7 +47,7 @@ class cource_following_learning_node:
         self.path_sub = rospy.Subscriber(
             "/move_base/NavfnROS/plan", Path, self.callback_path)
         self.dir_cmd_sub = rospy.Subscriber(
-            "/cmd_data", Int8MultiArray, self.callback_cmd)
+            "/cmd_data_key", Int8MultiArray, self.callback_cmd)
         self.min_distance = 0.0
         self.action = 0.0
         self.episode = 0
@@ -56,13 +56,16 @@ class cource_following_learning_node:
         self.cv_image = np.zeros((480, 640, 3), np.uint8)
         self.cv_left_image = np.zeros((480, 640, 3), np.uint8)
         self.cv_right_image = np.zeros((480, 640, 3), np.uint8)
-        self.learning = True
+        self.learning = False
         self.select_dl = False
+        self.flag = False
         self.start_time = time.strftime("%Y%m%d_%H:%M:%S")
         self.path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/result/'
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/model/'
+        self.load_path = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/model/20220103_22:25:34/model.net'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)
@@ -107,6 +110,7 @@ class cource_following_learning_node:
 
     def callback_cmd(self, data):
         self.dir_cmd_data = data.data
+        self.flag = True
 
     def callback_vel(self, data):
         self.vel = data
@@ -141,13 +145,16 @@ class cource_following_learning_node:
         img_right = resize(self.cv_right_image, (48, 64), mode='constant')
         r, g, b = cv2.split(img_right)
         imgobj_right = np.asanyarray([r, g, b])
-        dir_cmd = np.asanyarray(self.dir_cmd_data)
+
+        if self.flag:
+            dir_cmd = np.asanyarray(self.dir_cmd_data)
         ros_time = str(rospy.Time.now())
 
         if self.episode == 0:
             self.learning = False
-            self.dl.save(self.save_path)
-            # self.dl.load(self.load_path)
+            # self.dl.save(self.save_path)
+            self.dl.load(self.load_path)
+            print("Please path_direction_key")
 
         if self.learning:
             target_action = self.action
@@ -220,15 +227,15 @@ class cource_following_learning_node:
             self.vel.angular.z = target_action
             self.nav_pub.publish(self.vel)
 
-        else:
+        elif self.flag:
             target_action = self.dl.act(imgobj, dir_cmd)
             distance = self.min_distance
-            print("TEST MODE: " + " angular:" +
-                  str(target_action) + ", distance: " + str(distance))
+            print("USE MODEL MODE: " + " angular:" +
+                  str(target_action) + ", distance: " + str(distance), str(dir_cmd))
 
             self.episode += 1
             angle_error = abs(self.action - target_action)
-            line = [str(self.episode), "test", "0",
+            line = [str(self.episode), "use_model", "0",
                     str(angle_error), str(distance)]
             with open(self.path + self.start_time + '/' + 'reward.csv', 'a') as f:
                 writer = csv.writer(f, lineterminator='\n')
@@ -236,6 +243,9 @@ class cource_following_learning_node:
             self.vel.linear.x = 0.2
             self.vel.angular.z = target_action
             self.nav_pub.publish(self.vel)
+
+        else:
+            pass
 
         temp = copy.deepcopy(img)
         cv2.imshow("Resized Image", temp)
