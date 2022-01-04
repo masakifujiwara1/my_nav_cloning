@@ -20,6 +20,7 @@ from sensor_msgs.msg import Image
 import cv2
 import rospy
 import roslib
+import sys
 roslib.load_manifest('nav_cloning')
 
 
@@ -150,6 +151,8 @@ class cource_following_learning_node:
             self.learning = False
             self.dl.save(self.save_path)
             # self.dl.load(self.load_path)
+            os.system('killall roslaunch')
+            sys.exit()
 
         if self.learning:
             target_action = self.action
