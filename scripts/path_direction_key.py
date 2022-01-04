@@ -55,7 +55,7 @@ def getKey():
 
 
 def outdata(data):
-    # return "Input_data : "
+    data = "Input_data : " + str(data)
     return data
 
 
@@ -80,17 +80,16 @@ if __name__ == "__main__":
             key = getKey()
             if key == 'a':
                 pubdata.data = ldata
-                print(outdata(print(pubdata)))
+                print(outdata(pubdata))
             elif key == 'd':
                 pubdata.data = rdata
-                print(outdata(print(pubdata)))
+                print(outdata(pubdata))
             elif key == 'x':
                 break
             else:
                 rand = random.randint(0, 2)
                 pubdata.data = data[rand]
                 print(outdata(pubdata))
-
             pub.publish(pubdata)
     except:
         print(err)
