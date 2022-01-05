@@ -146,8 +146,6 @@ class cource_following_learning_node:
         r, g, b = cv2.split(img_right)
         imgobj_right = np.asanyarray([r, g, b])
 
-        if self.flag:
-            dir_cmd = np.asanyarray(self.dir_cmd_data)
         ros_time = str(rospy.Time.now())
 
         if self.episode == 0:
@@ -228,6 +226,7 @@ class cource_following_learning_node:
             self.nav_pub.publish(self.vel)
 
         elif self.flag:
+            dir_cmd = np.asanyarray(self.dir_cmd_data)
             target_action = self.dl.act(imgobj, dir_cmd)
             distance = self.min_distance
             print("USE MODEL MODE: " + " angular:" +

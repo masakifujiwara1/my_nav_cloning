@@ -55,7 +55,7 @@ def getKey():
 
 
 def outdata(data):
-    data = "Input_data : " + str(data)
+    data = "Input_data : " + str(data.data)
     return data
 
 
