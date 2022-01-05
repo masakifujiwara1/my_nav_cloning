@@ -29,6 +29,7 @@ class cource_following_learning_node:
         self.action_num = rospy.get_param(
             "/LiDAR_based_learning_node/action_num", 1)
         print("action_num: " + str(self.action_num))
+        print("use_model.py called")
         self.dl = deep_learning(n_action=self.action_num)
         self.bridge = CvBridge()
         self.image_sub = rospy.Subscriber(
@@ -65,7 +66,7 @@ class cource_following_learning_node:
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/model/'
         self.load_path = roslib.packages.get_pkg_dir(
-            'nav_cloning') + '/data/model/20220103_22:25:34/model.net'
+            'nav_cloning') + '/data/model/20220105_03:42:26/model.net'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)
@@ -152,9 +153,10 @@ class cource_following_learning_node:
             self.learning = False
             # self.dl.save(self.save_path)
             self.dl.load(self.load_path)
-            print("Please path_direction_key")
+            # print("model_called")
 
         if self.learning:
+            dir_cmd = None
             target_action = self.action
             distance = self.min_distance
 
@@ -229,7 +231,7 @@ class cource_following_learning_node:
             dir_cmd = np.asanyarray(self.dir_cmd_data)
             target_action = self.dl.act(imgobj, dir_cmd)
             distance = self.min_distance
-            print("USE MODEL MODE: " + " angular:" +
+            print("USE DIRECTION MODE: " + " angular:" +
                   str(target_action) + ", distance: " + str(distance), str(dir_cmd))
 
             self.episode += 1

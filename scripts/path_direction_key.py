@@ -6,6 +6,8 @@ import select
 import tty
 import termios
 import random
+
+from cv2 import SUBDIV2D_NEXT_AROUND_RIGHT
 from std_srvs.srv import SetBool, SetBoolResponse
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -72,7 +74,10 @@ if __name__ == "__main__":
 
     ldata = [0, 100, 0]
     rdata = [0, 0, 100]
+    sdata = [100, 0, 0]
     pubdata = Int8MultiArray()
+
+    STRAIGHT_MODE = True
 
     try:
         print(msg)
@@ -87,8 +92,11 @@ if __name__ == "__main__":
             elif key == 'x':
                 break
             else:
-                rand = random.randint(0, 2)
-                pubdata.data = data[rand]
+                if STRAIGHT_MODE:
+                    pubdata.data = sdata
+                else:
+                    rand = random.randint(0, 2)
+                    pubdata.data = data[rand]
                 print(outdata(pubdata))
             pub.publish(pubdata)
     except:
