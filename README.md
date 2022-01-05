@@ -13,7 +13,20 @@ rosservice call /start_wp_nav
 loss \
 angle_error : navigationの出力と訓練されたモデルの出力の差 \
 distance : 目標経路とロボットの位置の間の距離
-
+### Running simulation and use direction command
+* シミュレータの起動
+```
+roslaunch nav_cloning nav_cloning_sim_3f_use_model.launch
+```
+* rviz上の2D Pose Estimateで自己位置を合わせる
+* 実行
+```
+rosservice call /start_wp_nav
+```
+* 方向コマンド入力プログラム
+```
+rosrun nav_cloning path_direction_key.py
+```
 ## install
 * 環境 ubuntu18.04, ros melodic
 
