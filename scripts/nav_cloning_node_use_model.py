@@ -49,6 +49,8 @@ class cource_following_learning_node:
             "/move_base/NavfnROS/plan", Path, self.callback_path)
         self.dir_cmd_sub = rospy.Subscriber(
             "/cmd_data_key", Int8MultiArray, self.callback_cmd)
+        self.flag_sub = rospy.Subscriber(
+            "/running_flag", Int8, self.callback_flag)
         self.min_distance = 0.0
         self.action = 0.0
         self.episode = 0
@@ -60,13 +62,14 @@ class cource_following_learning_node:
         self.learning = False
         self.select_dl = False
         self.flag = False
+        self.running = True
         self.start_time = time.strftime("%Y%m%d_%H:%M:%S")
         self.path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/result/'
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/model/'
         self.load_path = roslib.packages.get_pkg_dir(
-            'nav_cloning') + '/data/model/20220105_03:42:26/model.net'
+            'nav_cloning') + '/data/model/20220109_01:05:45/model.net'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)
@@ -112,6 +115,12 @@ class cource_following_learning_node:
     def callback_cmd(self, data):
         self.dir_cmd_data = data.data
         self.flag = True
+
+    def callback_flag(self, data):
+        if data.data == 1:
+            self.running = True
+        else:
+            self.running = False
 
     def callback_vel(self, data):
         self.vel = data
@@ -231,8 +240,11 @@ class cource_following_learning_node:
             dir_cmd = np.asanyarray(self.dir_cmd_data)
             target_action = self.dl.act(imgobj, dir_cmd)
             distance = self.min_distance
-            print("USE DIRECTION MODE: " + " angular:" +
-                  str(target_action) + ", distance: " + str(distance), str(dir_cmd))
+            if self.running:
+                print("USE DIRECTION MODE: " + " angular:" +
+                      str(target_action) + ", distance: " + str(distance), str(dir_cmd))
+            else:
+                print("Running stop")
 
             self.episode += 1
             angle_error = abs(self.action - target_action)
@@ -241,7 +253,10 @@ class cource_following_learning_node:
             with open(self.path + self.start_time + '/' + 'reward.csv', 'a') as f:
                 writer = csv.writer(f, lineterminator='\n')
                 writer.writerow(line)
-            self.vel.linear.x = 0.2
+            if self.running:
+                self.vel.linear.x = 0.2
+            else:
+                self.vel.linear.x = 0.0
             self.vel.angular.z = target_action
             self.nav_pub.publish(self.vel)
 
