@@ -65,13 +65,14 @@ if __name__ == "__main__":
     settings = termios.tcgetattr(sys.stdin)
     rospy.init_node('path_direction')
     pub = rospy.Publisher('cmd_data_key', Int8MultiArray, queue_size=1)
+    f_pub = rospy.Publisher('running_flag', Int8, queue_size=1)
 
     data = [
         [100, 0, 0],
         [0, 100, 0],
         [0, 0, 100]
     ]
-
+    flag = 1
     ldata = [0, 100, 0]
     rdata = [0, 0, 100]
     sdata = [100, 0, 0]
@@ -89,6 +90,10 @@ if __name__ == "__main__":
             elif key == 'd':
                 pubdata.data = rdata
                 print(outdata(pubdata))
+            elif key == 'w':
+                flag = 1
+            elif key == 's':
+                flag = 0
             elif key == 'x':
                 break
             else:
@@ -99,6 +104,7 @@ if __name__ == "__main__":
                     pubdata.data = data[rand]
                 print(outdata(pubdata))
             pub.publish(pubdata)
+            f_pub.publish(flag)
     except:
         print(err)
 
