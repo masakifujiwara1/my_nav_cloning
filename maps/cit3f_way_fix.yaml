@@ -208,7 +208,7 @@ waypoints:
         x: -0.392743
         y: 9.05698
         z: 0.0033813
-        function: run_right
+        function: run_left
     - point:
         x: 0.0437583
         y: 27.6043
