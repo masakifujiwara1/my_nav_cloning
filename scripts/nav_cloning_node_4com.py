@@ -68,6 +68,10 @@ class cource_following_learning_node:
             'nav_cloning') + '/data/result/'
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/model/'
+        self.save_path3 = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/model_30000/'
+        self.save_path8 = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/model_80000/'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)

@@ -67,6 +67,10 @@ class cource_following_learning_node:
             'nav_cloning') + '/data/result/'
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/model/'
+        self.save_path3 = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/model_30000/'
+        self.save_path9 = roslib.packages.get_pkg_dir(
+            'nav_cloning') + '/data/model_90000/'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)
@@ -155,10 +159,16 @@ class cource_following_learning_node:
             self.count_rcmd += 1
 
         ros_time = str(rospy.Time.now())
-        count = 0
-        print(count)
+
+        if self.episode == 30000:
+            # self.dl.save(self.save_path3)
+            pass
 
         if self.episode == 60000:
+            # self.dl.save(self.save_path)
+            pass
+
+        if self.episode == 90000:
             self.learning = False
             self.dl.save(self.save_path)
             # self.dl.load(self.load_path)
@@ -226,7 +236,7 @@ class cource_following_learning_node:
             # end method
 
             print(" episode: " + str(self.episode) + ",dir:" + str(dir_cmd) + ", loss: " +
-                  str(loss) + ", angular: " + str(target_action) + ", distance: " + str(distance) + ", count_cmd: " + str(self.count_scmd) + str(self.count_lcmd) + str(self.count_rcmd))
+                  str(loss) + ", angular: " + str(target_action) + ", distance: " + str(distance) + ", count_cmd: " + str(self.count_scmd) + " " + str(self.count_lcmd) + " " + str(self.count_rcmd))
             self.episode += 1
             line = [str(self.episode), "training", str(
                 loss), str(angle_error), str(distance), str(self.count_scmd), str(self.count_lcmd), str(self.count_rcmd)]
