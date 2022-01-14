@@ -4,6 +4,7 @@ import copy
 import time
 import os
 import csv
+import random
 from std_srvs.srv import SetBool, SetBoolResponse
 from std_srvs.srv import Empty
 from geometry_msgs.msg import PoseWithCovarianceStamped
@@ -59,9 +60,13 @@ class cource_following_learning_node:
         self.cv_right_image = np.zeros((480, 640, 3), np.uint8)
         self.learning = True
         self.select_dl = False
+        # mabiku
+        self.probability = False
         self.count_scmd = 0
         self.count_rcmd = 0
         self.count_lcmd = 0
+        self.loss = 0
+        self.angle_error = 0
         self.start_time = time.strftime("%Y%m%d_%H:%M:%S")
         self.path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/result/'
@@ -151,24 +156,16 @@ class cource_following_learning_node:
         imgobj_right = np.asanyarray([r, g, b])
         dir_cmd = np.asanyarray(self.dir_cmd_data)
 
-        if str(self.dir_cmd_data) == '(100, 0, 0)':
-            self.count_scmd += 1
-        elif str(self.dir_cmd_data) == '(0, 100, 0)':
+        if str(self.dir_cmd_data) == '(0, 100, 0)':
             self.count_lcmd += 1
         elif str(self.dir_cmd_data) == '(0, 0, 100)':
             self.count_rcmd += 1
+        elif str(self.dir_cmd_data) == '(100, 0, 0)' and (not self.probability):
+            self.count_scmd += 1
 
         ros_time = str(rospy.Time.now())
 
-        if self.episode == 30000:
-            # self.dl.save(self.save_path3)
-            pass
-
-        if self.episode == 60000:
-            # self.dl.save(self.save_path)
-            pass
-
-        if self.episode == 90000:
+        if self.episode == 100000:
             self.learning = False
             self.dl.save(self.save_path)
             # self.dl.load(self.load_path)
@@ -221,19 +218,41 @@ class cource_following_learning_node:
             if self.select_dl and self.episode >= 0:
                 target_action = action
             """
-
-            # follow line method
-            action, loss = self.dl.act_and_trains(
-                imgobj, dir_cmd, target_action)
-
-            if abs(target_action) < 0.1:
-                action_left,  loss_left = self.dl.act_and_trains(
-                    imgobj_left,  dir_cmd, target_action - 0.2)
-                action_right, loss_right = self.dl.act_and_trains(
-                    imgobj_right, dir_cmd, target_action + 0.2)
-            angle_error = abs(action - target_action)
-
-            # end method
+            if self.probability:
+                rand = random.randint(1, 10)
+                if str(self.dir_cmd_data) == '(100, 0, 0)':
+                    if rand <= 2:
+                        # follow line method
+                        action, loss = self.dl.act_and_trains(
+                            imgobj, dir_cmd, target_action)
+                        if abs(target_action) < 0.1:
+                            action_left,  loss_left = self.dl.act_and_trains(
+                                imgobj_left,  dir_cmd, target_action - 0.2)
+                            action_right, loss_right = self.dl.act_and_trains(
+                                imgobj_right, dir_cmd, target_action + 0.2)
+                        angle_error = abs(action - target_action)
+                        self.count_scmd += 1
+                    else:
+                        loss = self.loss
+                        angle_error = self.angle_error
+                else:
+                    action, loss = self.dl.act_and_trains(
+                        imgobj, dir_cmd, target_action)
+                    if abs(target_action) < 0.1:
+                        action_left,  loss_left = self.dl.act_and_trains(
+                            imgobj_left,  dir_cmd, target_action - 0.2)
+                        action_right, loss_right = self.dl.act_and_trains(
+                            imgobj_right, dir_cmd, target_action + 0.2)
+                    angle_error = abs(action - target_action)
+            else:
+                action, loss = self.dl.act_and_trains(
+                    imgobj, dir_cmd, target_action)
+                if abs(target_action) < 0.1:
+                    action_left,  loss_left = self.dl.act_and_trains(
+                        imgobj_left,  dir_cmd, target_action - 0.2)
+                    action_right, loss_right = self.dl.act_and_trains(
+                        imgobj_right, dir_cmd, target_action + 0.2)
+                angle_error = abs(action - target_action)
 
             print(" episode: " + str(self.episode) + ",dir:" + str(dir_cmd) + ", loss: " +
                   str(loss) + ", angular: " + str(target_action) + ", distance: " + str(distance) + ", count_cmd: " + str(self.count_scmd) + " " + str(self.count_lcmd) + " " + str(self.count_rcmd))
@@ -246,6 +265,8 @@ class cource_following_learning_node:
             self.vel.linear.x = 0.2
             self.vel.angular.z = target_action
             self.nav_pub.publish(self.vel)
+            self.loss = loss
+            self.angle_error = angle_error
 
         else:
             target_action = self.dl.act(imgobj, dir_cmd)

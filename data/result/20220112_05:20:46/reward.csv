@@ -1,0 +1,2 @@
+step,mode,loss,angle_error(rad),distance(m)
+1,training,0.029624408,0.5835521668195724,0.0,1,0,0
