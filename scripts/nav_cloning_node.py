@@ -60,8 +60,13 @@ class cource_following_learning_node:
         self.cv_right_image = np.zeros((480, 640, 3), np.uint8)
         self.learning = True
         self.select_dl = False
-        # mabiku
-        self.probability = False
+
+        # mabiku_MODE
+        self.probability_MODE = False
+        # add_MODE
+        self.add_MODE = True
+        self.add_MODE_n = 3
+
         self.count_scmd = 0
         self.count_rcmd = 0
         self.count_lcmd = 0
@@ -156,16 +161,16 @@ class cource_following_learning_node:
         imgobj_right = np.asanyarray([r, g, b])
         dir_cmd = np.asanyarray(self.dir_cmd_data)
 
-        if str(self.dir_cmd_data) == '(0, 100, 0)':
+        if str(self.dir_cmd_data) == '(0, 100, 0)' and (not self.add_MODE):
             self.count_lcmd += 1
-        elif str(self.dir_cmd_data) == '(0, 0, 100)':
+        elif str(self.dir_cmd_data) == '(0, 0, 100)' and (not self.add_MODE):
             self.count_rcmd += 1
-        elif str(self.dir_cmd_data) == '(100, 0, 0)' and (not self.probability):
+        elif str(self.dir_cmd_data) == '(100, 0, 0)' and (not self.probability_MODE):
             self.count_scmd += 1
 
         ros_time = str(rospy.Time.now())
 
-        if self.episode == 100000:
+        if self.episode == 60000:
             self.learning = False
             self.dl.save(self.save_path)
             # self.dl.load(self.load_path)
@@ -218,7 +223,7 @@ class cource_following_learning_node:
             if self.select_dl and self.episode >= 0:
                 target_action = action
             """
-            if self.probability:
+            if self.probability_MODE:
                 rand = random.randint(1, 10)
                 if str(self.dir_cmd_data) == '(100, 0, 0)':
                     if rand <= 2:
@@ -244,6 +249,32 @@ class cource_following_learning_node:
                         action_right, loss_right = self.dl.act_and_trains(
                             imgobj_right, dir_cmd, target_action + 0.2)
                     angle_error = abs(action - target_action)
+
+            elif self.add_MODE:
+                if not str(self.dir_cmd_data) == '(100, 0, 0)':
+                    for i in range(self.add_MODE_n):
+                        action, loss = self.dl.act_and_trains(
+                            imgobj, dir_cmd, target_action)
+                        if abs(target_action) < 0.1:
+                            action_left,  loss_left = self.dl.act_and_trains(
+                                imgobj_left,  dir_cmd, target_action - 0.2)
+                            action_right, loss_right = self.dl.act_and_trains(
+                                imgobj_right, dir_cmd, target_action + 0.2)
+                        angle_error = abs(action - target_action)
+                        if str(self.dir_cmd_data) == '(0, 100, 0)':
+                            self.count_lcmd += 1
+                        if str(self.dir_cmd_data) == '(0, 0, 100)':
+                            self.count_rcmd += 1
+                else:
+                    action, loss = self.dl.act_and_trains(
+                        imgobj, dir_cmd, target_action)
+                    if abs(target_action) < 0.1:
+                        action_left,  loss_left = self.dl.act_and_trains(
+                            imgobj_left,  dir_cmd, target_action - 0.2)
+                        action_right, loss_right = self.dl.act_and_trains(
+                            imgobj_right, dir_cmd, target_action + 0.2)
+                    angle_error = abs(action - target_action)
+
             else:
                 action, loss = self.dl.act_and_trains(
                     imgobj, dir_cmd, target_action)

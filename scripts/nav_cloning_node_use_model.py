@@ -69,7 +69,7 @@ class cource_following_learning_node:
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/model/'
         self.load_path = roslib.packages.get_pkg_dir(
-            'nav_cloning') + '/data/model/20000step_random_3com/model.net'
+            'nav_cloning') + '/data/model/60000step_not_random_3com/model.net'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
         os.makedirs(self.path + self.start_time)
