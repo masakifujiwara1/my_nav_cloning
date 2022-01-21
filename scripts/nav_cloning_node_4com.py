@@ -163,7 +163,7 @@ class cource_following_learning_node:
 
         ros_time = str(rospy.Time.now())
 
-        if self.episode == 20000:
+        if self.episode == 60000:
             self.learning = False
             self.dl.save(self.save_path)
             # self.dl.load(self.load_path)
@@ -233,7 +233,7 @@ class cource_following_learning_node:
             print(" episode: " + str(self.episode) + ",dir:" + str(dir_cmd) + ", loss: " +
                   str(loss) + ", angular: " + str(target_action) + ", distance: " + str(distance) + ", count_cmd: " + str(self.count_scmd) + " " + str(self.count_ccmd) + " " + str(self.count_lcmd) + " " + str(self.count_rcmd))
             self.episode += 1
-            line = [str(self.episode), "training", str(
+            line = [str(self.episode), "training_4com", str(
                 loss), str(angle_error), str(distance), str(self.count_scmd), str(self.count_ccmd), str(self.count_lcmd), str(self.count_rcmd)]
             with open(self.path + self.start_time + '/' + 'reward.csv', 'a') as f:
                 writer = csv.writer(f, lineterminator='\n')
