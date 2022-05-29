@@ -74,7 +74,7 @@ class cource_following_learning_node:
             'nav_cloning') + '/data/model_80000/'
         self.previous_reset_time = 0
         self.start_time_s = rospy.get_time()
-        os.makedirs(self.path + self.start_time)
+        # os.makedirs(self.path + self.start_time)
 
         with open(self.path + self.start_time + '/' + 'reward.csv', 'w') as f:
             writer = csv.writer(f, lineterminator='\n')
