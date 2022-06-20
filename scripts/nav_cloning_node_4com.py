@@ -76,10 +76,10 @@ class cource_following_learning_node:
         self.start_time_s = rospy.get_time()
         # os.makedirs(self.path + self.start_time)
 
-        with open(self.path + self.start_time + '/' + 'reward.csv', 'w') as f:
-            writer = csv.writer(f, lineterminator='\n')
-            writer.writerow(
-                ['step', 'mode', 'loss', 'angle_error(rad)', 'distance(m)'])
+        # with open(self.path + self.start_time + '/' + 'reward.csv', 'w') as f:
+        #     writer = csv.writer(f, lineterminator='\n')
+        #     writer.writerow(
+        #         ['step', 'mode', 'loss', 'angle_error(rad)', 'distance(m)'])
 
     def callback(self, data):
         try:
@@ -151,6 +151,7 @@ class cource_following_learning_node:
         r, g, b = cv2.split(img_right)
         imgobj_right = np.asanyarray([r, g, b])
         dir_cmd = np.asanyarray(self.dir_cmd_data)
+        # dir_cmd = self.dir_cmd_data
 
         if str(self.dir_cmd_data) == '(100, 0, 0, 0)':
             self.count_scmd += 1

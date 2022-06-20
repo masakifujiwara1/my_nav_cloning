@@ -31,7 +31,7 @@ roslib.load_manifest('nav_cloning')
 
 # control param
 EPISODE = 30000 # more 7190
-HZ = 10
+HZ = 8
 
 
 class offline():
@@ -48,11 +48,11 @@ class offline():
         self.path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/dataset/'
         # self.dir_cmd_data = Int8MultiArray()
-        self.dir_cmd_data = tuple([100, 0, 0, 0])
+        self.dir_cmd_data = tuple([10, 0, 0, 0])
         # print(type(self.dir_cmd_data))
         self.action_list = []
         self.action = 0
-        self.date_path = "4hz_v2/"
+        self.date_path = "4hz_v3/"
         self.episode = 0
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/dataset/' + self.date_path + 'model/'
@@ -91,13 +91,13 @@ class offline():
        
         if cur_action1 == '(100, 0, 0, 0)':
             # print('success')
-            self.dir_cmd_data = tuple([100, 0, 0, 0])
+            self.dir_cmd_data = tuple([10, 0, 0, 0])
         elif cur_action1 == '(0, 100, 0, 0)':
-            self.dir_cmd_data = tuple([0, 100, 0, 0])
+            self.dir_cmd_data = tuple([0, 10, 0, 0])
         elif cur_action1 == '(0, 0, 100, 0)':
-            self.dir_cmd_data = tuple([0, 0, 100, 0])
+            self.dir_cmd_data = tuple([0, 0, 10, 0])
         elif cur_action1 == '(0, 0, 0, 100)':
-            self.dir_cmd_data = tuple([0, 0, 0, 100])
+            self.dir_cmd_data = tuple([0, 0, 0, 10])
 
         # print(cur_action1)
         # print(type(cur_action))
@@ -113,7 +113,7 @@ class offline():
             # os.system('killall rosrun')
             sys.exit()
 
-        if self.counter == 7190:
+        if self.counter == 14845:
             self.counter = 0
                 
         self.read_img()
@@ -149,6 +149,9 @@ class offline():
         print("episode:" + str(self.episode), "loss:" + str(loss) , "action:" + str(self.action), "cmd_data:" + str(self.dir_cmd_data))
         self.counter += 1
         self.episode += 1
+
+        cv2.imshow("img", self.cv_image)
+        cv2.waitKey(1)
 
 
 if __name__ == '__main__':

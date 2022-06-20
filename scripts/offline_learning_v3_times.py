@@ -30,9 +30,10 @@ import ast
 roslib.load_manifest('nav_cloning')
 
 # control param
-EPISODE = 30000 # more 7190
+EPISODE = 60000 # more 7190
 HZ = 10
 
+TIMES = 5
 
 class offline():
     def __init__(self):
@@ -52,12 +53,12 @@ class offline():
         # print(type(self.dir_cmd_data))
         self.action_list = []
         self.action = 0
-        self.date_path = "4hz_v2/"
+        self.date_path = "4hz_v3/"
         self.episode = 0
         self.save_path = roslib.packages.get_pkg_dir(
             'nav_cloning') + '/data/dataset/' + self.date_path + 'model/'
         self.episode = 0
-
+        self.times_flg = False
         #calc_episode
         # self.calc_count = int(math.ceil(EPISODE / 7190))
         # print(self.calc_count)
@@ -94,10 +95,13 @@ class offline():
             self.dir_cmd_data = tuple([100, 0, 0, 0])
         elif cur_action1 == '(0, 100, 0, 0)':
             self.dir_cmd_data = tuple([0, 100, 0, 0])
+            self.times_flg = True
         elif cur_action1 == '(0, 0, 100, 0)':
             self.dir_cmd_data = tuple([0, 0, 100, 0])
+            self.times_flg = True
         elif cur_action1 == '(0, 0, 0, 100)':
             self.dir_cmd_data = tuple([0, 0, 0, 100])
+            self.times_flg = True
 
         # print(cur_action1)
         # print(type(cur_action))
@@ -113,7 +117,7 @@ class offline():
             # os.system('killall rosrun')
             sys.exit()
 
-        if self.counter == 7190:
+        if self.counter == 14845:
             self.counter = 0
                 
         self.read_img()
@@ -130,18 +134,33 @@ class offline():
 
         ros_time = str(rospy.Time.now())
 
-    
-        # learning
-        target_action = self.action
-        dir_cmd = np.asanyarray(self.dir_cmd_data)
-        # print(dir_cmd, type(dir_cmd))
-        action, loss = self.dl.act_and_trains(
-            imgobj, dir_cmd, target_action)
-        if abs(target_action) < 0.1:
-            action_left,  loss_left = self.dl.act_and_trains(
-                imgobj_left, dir_cmd, target_action - 0.2)
-            action_right, loss_right = self.dl.act_and_trains(
-                imgobj_right, dir_cmd, target_action + 0.2)
+        if self.times_flg:
+            for i in range(TIMES):
+                # learning
+                target_action = self.action
+                dir_cmd = np.asanyarray(self.dir_cmd_data)
+                # print(dir_cmd, type(dir_cmd))
+                action, loss = self.dl.act_and_trains(
+                    imgobj, dir_cmd, target_action)
+                if abs(target_action) < 0.1:
+                    action_left,  loss_left = self.dl.act_and_trains(
+                        imgobj_left, dir_cmd, target_action - 0.2)
+                    action_right, loss_right = self.dl.act_and_trains(
+                        imgobj_right, dir_cmd, target_action + 0.2)
+            self.times_flg = False
+
+        else:
+            # learning
+            target_action = self.action
+            dir_cmd = np.asanyarray(self.dir_cmd_data)
+            # print(dir_cmd, type(dir_cmd))
+            action, loss = self.dl.act_and_trains(
+                imgobj, dir_cmd, target_action)
+            if abs(target_action) < 0.1:
+                action_left,  loss_left = self.dl.act_and_trains(
+                    imgobj_left, dir_cmd, target_action - 0.2)
+                action_right, loss_right = self.dl.act_and_trains(
+                    imgobj_right, dir_cmd, target_action + 0.2)
 
         
 
@@ -149,6 +168,9 @@ class offline():
         print("episode:" + str(self.episode), "loss:" + str(loss) , "action:" + str(self.action), "cmd_data:" + str(self.dir_cmd_data))
         self.counter += 1
         self.episode += 1
+
+        cv2.imshow("img", self.cv_image)
+        cv2.waitKey(1)
 
 
 if __name__ == '__main__':
